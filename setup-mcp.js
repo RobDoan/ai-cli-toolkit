@@ -4,7 +4,6 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import fs from 'fs-extra';
 import path from 'path';
-import { execSync } from 'child_process';
 import os from 'os';
 import {
   mcpServers,
@@ -45,8 +44,17 @@ class MCPSetup {
       // Check if token exists in environment
       const envValue = process.env[token];
       if (envValue) {
-        this.tokens[token] = envValue;
-        this.log.success(`Using ${token} from environment`);
+        const { value } = await inquirer.prompt([{
+          type: 'password',
+          name: 'value',
+          message: `Enter your ${token} (press Enter to use existing value):`,
+          default: envValue,
+          validate: input => input.trim() !== '' || 'Token cannot be empty'
+        }]);
+        this.tokens[token] = value;
+        if (value === envValue) {
+          this.log.success(`Using ${token} from environment`);
+        }
       } else {
         const { value } = await inquirer.prompt([{
           type: 'password',
