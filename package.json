@@ -1,0 +1,16 @@
+{
+  "name": "github-mcp-setup",
+  "version": "1.0.0",
+  "description": "Setup script for GitHub and other MCP servers",
+  "main": "setup-mcp.js",
+  "scripts": {
+    "setup": "node setup-mcp.js",
+    "dry-run": "node setup-mcp.js --dry-run"
+  },
+  "dependencies": {
+    "inquirer": "^9.2.12",
+    "chalk": "^5.3.0",
+    "fs-extra": "^11.2.0"
+  },
+  "type": "module"
+}
