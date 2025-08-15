@@ -60,67 +60,51 @@ class MCPSetup {
   }
 
   async setupClaudeCode() {
-    this.log.info('Setting up Claude Code...');
+    this.log.info('Setting up Claude Code with local scope...');
 
-    // Check if claude command exists
     try {
-      execSync('which claude', { stdio: 'ignore' });
-    } catch {
-      this.log.error('Claude CLI not found. Please install Claude Code first.');
+      const config = { mcpServers: {} };
+
+      // Add selected servers to config
+      for (const serverName of this.selectedServers) {
+        const server = getServerConfig(serverName);
+        let serverConfig;
+
+        // Handle workspace folder substitution for filesystem server
+        if (serverName === 'filesystem') {
+          const { workspaceFolder } = await inquirer.prompt([{
+            type: 'input',
+            name: 'workspaceFolder',
+            message: 'Enter the workspace folder path for filesystem access:',
+            default: process.cwd(),
+            validate: input => fs.pathExistsSync(input) || 'Path does not exist'
+          }]);
+
+          const tokensWithWorkspace = { ...this.tokens, WORKSPACE_FOLDER: workspaceFolder };
+          serverConfig = substituteTokens(server.config.claudeCode, tokensWithWorkspace);
+        } else {
+          serverConfig = substituteTokens(server.config.claudeCode, this.tokens);
+        }
+
+        config.mcpServers[serverName] = serverConfig;
+        this.log.success(`${server.name} added to local Claude Code config`);
+      }
+
+      // Write .mcp.json file in current directory
+      const configPath = path.join(process.cwd(), '.mcp.json');
+      if (this.dryRun) {
+        this.log.info(`[DRY RUN] Would write config to: ${configPath}`);
+        this.log.info(`[DRY RUN] Config content:`);
+        console.log(JSON.stringify(config, null, 2));
+      } else {
+        await fs.writeJson(configPath, config, { spaces: 2 });
+      }
+      this.log.success(`Claude Code local config ${this.dryRun ? 'would be' : ''} saved to: ${configPath}`);
+      return true;
+    } catch (error) {
+      this.log.error(`Failed to setup Claude Code: ${error.message}`);
       return false;
     }
-
-    let success = true;
-    for (const serverName of this.selectedServers) {
-      const server = getServerConfig(serverName);
-      let config = server.config.claudeCode;
-
-      // Handle workspace folder substitution for filesystem server
-      if (serverName === 'filesystem') {
-        const { workspaceFolder } = await inquirer.prompt([{
-          type: 'input',
-          name: 'workspaceFolder',
-          message: 'Enter the workspace folder path for filesystem access:',
-          default: process.cwd(),
-          validate: input => fs.pathExistsSync(input) || 'Path does not exist'
-        }]);
-
-        const tokensWithWorkspace = { ...this.tokens, WORKSPACE_FOLDER: workspaceFolder };
-        config = substituteTokens(config, tokensWithWorkspace);
-      } else {
-        config = substituteTokens(config, this.tokens);
-      }
-
-      try {
-        // For SSE servers, we might need to install mcp-remote
-        if (server.type === 'sse') {
-          this.log.info(`Installing mcp-remote for ${server.name}...`);
-          try {
-            execSync('npm list -g mcp-remote', { stdio: 'ignore' });
-          } catch {
-            if (this.dryRun) {
-              this.log.info('[DRY RUN] Would install mcp-remote globally');
-            } else {
-              this.log.info('Installing mcp-remote globally...');
-              execSync('npm install -g mcp-remote', { stdio: 'inherit' });
-            }
-          }
-        }
-
-        const configJson = JSON.stringify(config);
-        if (this.dryRun) {
-          this.log.info(`[DRY RUN] Would execute: claude mcp add-json ${serverName}`);
-          this.log.info(`[DRY RUN] Config: ${configJson}`);
-        } else {
-          execSync(`claude mcp add-json ${serverName} '${configJson}'`, { stdio: 'inherit' });
-        }
-        this.log.success(`${server.name} configured for Claude Code`);
-      } catch (error) {
-        this.log.error(`Failed to configure ${server.name} for Claude Code: ${error.message}`);
-        success = false;
-      }
-    }
-    return success;
   }
 
   async setupClaudeDesktop() {

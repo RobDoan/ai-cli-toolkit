@@ -82,16 +82,16 @@ export const mcpServers = {
     config: {
       claudeCode: {
         // For SSE servers in Claude Code, we use mcp-remote
-        command: 'npx',
-        args: ['mcp-remote', 'https://mcp.linear.app/sse'],
+        type: 'sse',
+        url: 'https://mcp.linear.app/sse',
       },
       claudeDesktop: {
-        command: 'npx',
-        args: ['mcp-remote', 'https://mcp.linear.app/sse']
+        type: 'sse',
+        url: 'https://mcp.linear.app/sse',
       },
       vscode: {
-        "command": "npx",
-        "args": ["-y", "mcp-remote", "https://mcp.linear.app/sse"]
+        type: 'sse',
+        url: 'https://mcp.linear.app/sse',
       }
     }
   },
@@ -111,8 +111,8 @@ export const mcpServers = {
         url: 'http://127.0.0.1:3845/sse',
       },
       vscode: {
-        command: 'npx',
-        args: ['-y', 'mcp-remote', 'http://127.0.0.1:3845/sse']
+        type: 'sse',
+        url: 'http://127.0.0.1:3845/sse',
       }
     }
   },
