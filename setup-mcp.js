@@ -188,12 +188,13 @@ class MCPSetup {
         }
       }
 
-      const configPath = path.join(process.cwd(), 'mcp.json');
+      const configPath = path.join(process.cwd(), '.vscode', 'mcp.json');
       if (this.dryRun) {
         this.log.info(`[DRY RUN] Would write config to: ${configPath}`);
         this.log.info(`[DRY RUN] Config content:`);
         console.log(JSON.stringify(config, null, 2));
       } else {
+        await fs.ensureDir(path.dirname(configPath));
         await fs.writeJson(configPath, config, { spaces: 2 });
       }
       this.log.success(`VS Code MCP config ${this.dryRun ? 'would be' : ''} saved to: ${configPath}`);
