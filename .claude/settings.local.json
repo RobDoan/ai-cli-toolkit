@@ -5,7 +5,9 @@
       "Bash(chmod:*)",
       "Bash(node:*)",
       "Bash(npm install)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(git add:*)",
+      "Bash(npm:*)"
     ],
     "deny": [],
     "ask": [],
