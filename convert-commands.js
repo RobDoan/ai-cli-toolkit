@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from 'fs';
+import inquirer from 'inquirer';
 import path from 'path';
 import yaml from 'js-yaml';
 import yargs from 'yargs';
@@ -15,7 +16,7 @@ class CommandConverter {
     // Default to package bundled commands if no source specified
     this.sourceDir = options.sourceDir || this.getDefaultCommandsDir();
     this.claudeDir = options.claudeDir || './.claude/commands';
-    this.copilotDir = options.copilotDir || './.copilot';
+    this.copilotDir = options.copilotDir || './.github/prompts';
     this.geminiDir = options.geminiDir || './.gemini/commands';
     this.isUsingBundledCommands = !options.sourceDir;
   }
@@ -24,12 +25,12 @@ class CommandConverter {
   getDefaultCommandsDir() {
     const packageCommandsDir = path.join(__dirname, 'commands');
     const localCommandsDir = './commands';
-    
+
     // Check if package bundled commands exist
     if (fs.existsSync(packageCommandsDir)) {
       return packageCommandsDir;
     }
-    
+
     // Fallback to local commands directory
     return localCommandsDir;
   }
@@ -43,7 +44,7 @@ class CommandConverter {
     });
   }
 
-  // Load all JSON command files from source directory
+  // Load all YAML command files from source directory (including subdirectories)
   loadSourceCommands() {
     const commands = [];
 
@@ -52,26 +53,41 @@ class CommandConverter {
       return commands;
     }
 
-    const files = fs.readdirSync(this.sourceDir);
-
-    for (const file of files) {
-      if (file.endsWith('.yaml') || file.endsWith('.yml')) {
-        try {
-          const filePath = path.join(this.sourceDir, file);
-          const content = fs.readFileSync(filePath, 'utf8');
-          const command = yaml.load(content);
-          commands.push(command);
-        } catch (error) {
-          console.error(`Error loading ${file}:`, error.message);
-        }
-      }
-    }
-
+    this.loadCommandsFromDirectory(this.sourceDir, '', commands);
     return commands;
   }
 
-  // Convert to Claude Code format (.md)
-  convertToClaudeFormat(command) {
+  // Recursively load commands from directory
+  loadCommandsFromDirectory(dirPath, relativePath, commands) {
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+      const currentRelativePath = relativePath ? path.join(relativePath, entry.name) : entry.name;
+
+      if (entry.isDirectory()) {
+        // Recursively process subdirectories
+        this.loadCommandsFromDirectory(fullPath, currentRelativePath, commands);
+      } else if (entry.isFile() && (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml'))) {
+        try {
+          const content = fs.readFileSync(fullPath, 'utf8');
+          const command = yaml.load(content);
+
+          // Add metadata about file location
+          command._filePath = currentRelativePath;
+          command._subfolder = relativePath;
+          command._fileName = path.parse(entry.name).name;
+
+          commands.push(command);
+        } catch (error) {
+          console.error(`Error loading ${currentRelativePath}:`, error.message);
+        }
+      }
+    }
+  }
+
+  // Convert to Claude Code format (.md) - preserves subfolder structure
+  async convertToClaudeFormat(command) {
     let content = '';
 
     // Add frontmatter if metadata exists
@@ -98,15 +114,45 @@ class CommandConverter {
     // Add prompt content
     content += command.prompt;
 
+    // Preserve subfolder structure for Claude
     const filename = `${command.name}.md`;
-    const filepath = path.join(this.claudeDir, filename);
+    let targetDir = this.claudeDir;
+
+    if (command._subfolder) {
+      targetDir = path.join(this.claudeDir, command._subfolder);
+      // Ensure subfolder exists
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+    }
+
+    const filepath = path.join(targetDir, filename);
+    const displayPath = command._subfolder ? `${command._subfolder}/${filename}` : filename;
+
+    if (fs.existsSync(filepath)) {
+      const { action } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'action',
+          message: `Command ${displayPath} already exists. What do you want to do?`,
+          choices: [
+            { name: 'Override', value: 'override' },
+            { name: 'Skip', value: 'skip' }
+          ]
+        }
+      ]);
+      if (action === 'skip') {
+        console.log(`⏭️  Skipped Claude command: ${displayPath}`);
+        return;
+      }
+    }
 
     fs.writeFileSync(filepath, content);
-    console.log(`✓ Created Claude command: ${filename}`);
+    console.log(`✓ Created Claude command: ${displayPath}`);
   }
 
-  // Convert to GitHub Copilot format (.prompt.md)
-  convertToCopilotFormat(command) {
+  // Convert to GitHub Copilot format (.prompt.md) - uses prefix naming for subfolders
+  async convertToCopilotFormat(command) {
     let content = '';
 
     // Add frontmatter
@@ -124,7 +170,8 @@ class CommandConverter {
         if (tool.includes('Read')) return 'read';
         return tool.toLowerCase();
       });
-      metadata.push(`tools: [${copilotTools.map(t => `'${t}'`).join(', ')}]`);
+      const toolsString = copilotTools.map(t => `'${t}'`).join(', ');
+      metadata.push(`tools: [${toolsString}]`);
     }
     if (command.description) {
       metadata.push(`description: '${command.description}'`);
@@ -140,15 +187,41 @@ class CommandConverter {
     let prompt = command.prompt.replace(/\$ARGUMENTS/g, '${args}');
     content += prompt;
 
-    const filename = `${command.name}.prompt.md`;
+    // Use prefix naming for subfolders (e.g., kiro_commit.prompt.md)
+    let filename;
+    if (command._subfolder) {
+  const prefix = command._subfolder.replace(/\//g, '_');
+      filename = `${prefix}_${command.name}.prompt.md`;
+    } else {
+      filename = `${command.name}.prompt.md`;
+    }
+
     const filepath = path.join(this.copilotDir, filename);
+
+    if (fs.existsSync(filepath)) {
+      const { action } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'action',
+          message: `Copilot prompt ${filename} already exists. What do you want to do?`,
+          choices: [
+            { name: 'Override', value: 'override' },
+            { name: 'Skip', value: 'skip' }
+          ]
+        }
+      ]);
+      if (action === 'skip') {
+        console.log(`⏭️  Skipped Copilot prompt: ${filename}`);
+        return;
+      }
+    }
 
     fs.writeFileSync(filepath, content);
     console.log(`✓ Created Copilot prompt: ${filename}`);
   }
 
-  // Convert to Gemini CLI format (.toml)
-  convertToGeminiFormat(command) {
+  // Convert to Gemini CLI format (.toml) - preserves subfolder structure
+  async convertToGeminiFormat(command) {
     let content = '';
 
     // Add description
@@ -164,11 +237,41 @@ class CommandConverter {
     content += prompt;
     content += '\n"""';
 
+    // Preserve subfolder structure for Gemini
     const filename = `${command.name}.toml`;
-    const filepath = path.join(this.geminiDir, filename);
+    let targetDir = this.geminiDir;
+
+    if (command._subfolder) {
+      targetDir = path.join(this.geminiDir, command._subfolder);
+      // Ensure subfolder exists
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+    }
+
+    const filepath = path.join(targetDir, filename);
+    const displayPath = command._subfolder ? `${command._subfolder}/${filename}` : filename;
+
+    if (fs.existsSync(filepath)) {
+      const { action } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'action',
+          message: `Gemini command ${displayPath} already exists. What do you want to do?`,
+          choices: [
+            { name: 'Override', value: 'override' },
+            { name: 'Skip', value: 'skip' }
+          ]
+        }
+      ]);
+      if (action === 'skip') {
+        console.log(`⏭️  Skipped Gemini command: ${displayPath}`);
+        return;
+      }
+    }
 
     fs.writeFileSync(filepath, content);
-    console.log(`✓ Created Gemini command: ${filename}`);
+    console.log(`✓ Created Gemini command: ${displayPath}`);
   }
 
   // Dry run - show what would be done
@@ -189,17 +292,33 @@ class CommandConverter {
     console.log(`Found ${commands.length} command(s) that would be converted:\n`);
 
     for (const command of commands) {
-      console.log(`📄 ${command.name}`);
-      console.log(`  → ${command.name}.md (Claude Code)`);
-      console.log(`  → ${command.name}.prompt.md (GitHub Copilot)`);
-      console.log(`  → ${command.name}.toml (Gemini CLI)\n`);
+      const displayName = command._subfolder ? `${command._subfolder}/${command.name}` : command.name;
+      console.log(`📄 ${displayName}`);
+
+      // Claude Code output
+      const claudePath = command._subfolder ? `${command._subfolder}/${command.name}.md` : `${command.name}.md`;
+      console.log(`  → ${claudePath} (Claude Code)`);
+
+      // GitHub Copilot output (with prefix for subfolders)
+      let copilotName;
+      if (command._subfolder) {
+        const prefix = command._subfolder.replace(/[/\\]/g, '_');
+        copilotName = `${prefix}_${command.name}.prompt.md`;
+      } else {
+        copilotName = `${command.name}.prompt.md`;
+      }
+      console.log(`  → ${copilotName} (GitHub Copilot)`);
+
+      // Gemini CLI output
+      const geminiPath = command._subfolder ? `${command._subfolder}/${command.name}.toml` : `${command.name}.toml`;
+      console.log(`  → ${geminiPath} (Gemini CLI)\n`);
     }
 
     console.log('💡 Run without --dry-run to perform the conversion');
   }
 
   // Main conversion function
-  convertAll() {
+  async convertAll() {
     console.log('🔄 Starting command conversion...\n');
     console.log(`Source directory: ${this.sourceDir}${this.isUsingBundledCommands ? ' (bundled)' : ''}`);
     console.log(`Claude output: ${this.claudeDir}`);
@@ -220,9 +339,9 @@ class CommandConverter {
       console.log(`Converting: ${command.name}`);
 
       try {
-        this.convertToClaudeFormat(command);
-        this.convertToCopilotFormat(command);
-        this.convertToGeminiFormat(command);
+        await this.convertToClaudeFormat(command);
+        await this.convertToCopilotFormat(command);
+        await this.convertToGeminiFormat(command);
         console.log('');
       } catch (error) {
         console.error(`Error converting ${command.name}:`, error.message);
@@ -255,7 +374,7 @@ const argv = yargs(hideBin(process.argv))
     alias: 'p',
     type: 'string',
     description: 'Output directory for GitHub Copilot prompts',
-    default: './.copilot'
+    default: './.github/prompts'
   })
   .option('gemini', {
     alias: 'g',
@@ -284,7 +403,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     copilotDir: argv.copilot,
     geminiDir: argv.gemini
   });
-  
+
   if (argv.dryRun) {
     converter.dryRun();
   } else {
