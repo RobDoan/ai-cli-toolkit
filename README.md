@@ -1,18 +1,24 @@
-# Command Converter
+# AI CLI Toolkit
 
-Universal command converter for Claude Code, GitHub Copilot, and Gemini CLI slash commands.
+Universal toolkit for AI CLI tools, featuring MCP server setup and command conversion.
 
 ## Features
 
-- 🔄 **Universal Format**: Write commands once in YAML, convert to all platforms
-- 📁 **Subfolder Support**: Organize commands in folders with intelligent handling
-- 🎯 **Platform-Specific**: Each platform gets optimized format and structure
-- 📦 **Bundled Commands**: Ships with pre-built commands ready to use
-- 🔍 **Dry Run**: Preview conversions before executing
-- ⚙️ **Flexible**: Customizable source and target directories
+- **MCP Server Setup**: Interactively configure MCP servers for Claude Code, Claude Desktop, and VS Code.
+- **Universal Command Format**: Write commands once in YAML, convert them for all supported platforms.
+- **Platform-Specific Optimization**: Each platform receives an optimized format and structure.
+- **Bundled Commands**: Comes with a set of pre-built commands for immediate use.
+- **Flexible Configuration**: Customize source and output directories for commands.
+- **Dry Run Mode**: Preview changes and conversions before they are executed.
 
 ## Supported Platforms
 
+### MCP Server Setup
+- Claude Code
+- Claude Desktop
+- VS Code (GitHub Copilot)
+
+### Command Conversion
 | Platform | Format | Structure |
 |----------|--------|-----------|
 | **Claude Code** | `.md` | Preserves subfolders |
@@ -22,42 +28,67 @@ Universal command converter for Claude Code, GitHub Copilot, and Gemini CLI slas
 ## Installation
 
 ```bash
-npm install -g @quydoan/command-converter
+npm install -g ai-cli-toolkit
 ```
 
 ## Usage
 
-### Basic Usage
+The toolkit is available under two aliases: `ai-cli-toolkit` and `ait`.
+
+### `setup` Command
+
+Interactively set up and configure MCP servers for your AI CLI clients.
+
+```bash
+# Start the interactive setup process
+ait setup
+
+# Preview the setup without making changes
+ait setup --dry-run
+```
+
+### `convert` Command
+
+Convert YAML commands to formats compatible with different AI CLI platforms.
 
 ```bash
 # Convert bundled commands
-convert-commands
+ait convert
 
-# Preview what will be converted
-convert-commands --dry-run
+# Preview the conversion process
+ait convert --dry-run
 
-# Use custom source directory
-convert-commands --source ./my-commands
+# Use a custom source directory for your commands
+ait convert --source ./my-commands
 
-# Custom output directories
-convert-commands --claude ./claude-output --copilot ./copilot-output --gemini ./gemini-output
+# Specify custom output directories
+ait convert --claude-dir ./claude --copilot-dir ./copilot --gemini-dir ./gemini
 ```
 
-### Command Line Options
+## Command Line Options
 
+### `setup`
 ```bash
 Options:
-  -s, --source   Source directory containing YAML command files (defaults to bundled)
-  -c, --claude   Output directory for Claude Code commands (default: ./.claude/commands)
-  -p, --copilot  Output directory for GitHub Copilot prompts (default: ./.github/prompts)
-  -g, --gemini   Output directory for Gemini CLI commands (default: ./.gemini/commands)
-  -d, --dry-run  Show what would be done without making changes
-  -h, --help     Show help
+  --dry-run  Preview changes without applying them
+  --config   Path to a custom configuration file
+  --help     Show help
+```
+
+### `convert`
+```bash
+Options:
+  --source       Source directory for YAML command files (defaults to bundled commands)
+  --claude-dir   Output directory for Claude Code commands (default: ./.claude/commands)
+  --copilot-dir  Output directory for GitHub Copilot prompts (default: ./.github/prompts)
+  --gemini-dir   Output directory for Gemini CLI commands (default: ./.gemini/commands)
+  --dry-run      Show what would be done without making changes
+  --help         Show help
 ```
 
 ## YAML Command Format
 
-Create commands using this universal YAML format:
+Create your commands using this universal YAML format:
 
 ```yaml
 name: commit
@@ -65,7 +96,7 @@ description: Create a git commit with a descriptive message
 prompt: |
   Create a git commit with the following message: $ARGUMENTS
 
-  First run git status to see what files are staged, then create the commit.
+  First, run git status to see what files are staged, then create the commit.
 arguments: "[message]"
 tools:
   - "Bash(git add:*)"
@@ -75,7 +106,7 @@ model: "claude-3-sonnet"  # optional
 
 ## Subfolder Organization
 
-Commands in subfolders are handled differently per platform:
+Commands in subfolders are handled differently per platform during conversion:
 
 ```
 commands/
@@ -84,7 +115,7 @@ commands/
     └── advanced-commit.yaml
 ```
 
-**Results:**
+**Conversion Results:**
 - **Claude**: `commit.md`, `git/advanced-commit.md`
 - **Copilot**: `commit.prompt.md`, `git_advanced-commit.prompt.md`
 - **Gemini**: `commit.toml`, `git/advanced-commit.toml`
@@ -124,14 +155,9 @@ Create a git commit with the following message: {{args}}
 
 ## Bundled Commands
 
-The package includes pre-built commands for common development tasks:
+The toolkit includes pre-built commands for various development tasks, such as code review, project specification, and implementation guidance.
 
-- Code review and analysis
-- Project requirements and specifications
-- Implementation guidance
-- And more...
-
-Run `convert-commands --dry-run` to see all available bundled commands.
+Run `ait convert --dry-run` to see a list of all available bundled commands.
 
 ## License
 
