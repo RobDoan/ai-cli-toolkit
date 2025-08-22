@@ -53,5 +53,45 @@
     "setup-mcp.js",
     "mcp-servers.config.js",
     "convert-commands.js"
-  ]
+  ],
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.4",
+    "@semantic-release/npm": "^12.0.2",
+    "semantic-release": "^24.2.7"
+  },
+  "release": {
+    "branches": ["main"],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/changelog",
+      "@semantic-release/npm",
+      [
+        "@semantic-release/github",
+        {
+          "assets": [
+            {
+              "path": "commands.tar.gz",
+              "name": "commands.tar.gz",
+              "label": "Commands Archive"
+            },
+            {
+              "path": "quydoan-command-converter-*.tgz",
+              "name": "quydoan-command-converter-${nextRelease.version}.tgz",
+              "label": "NPM Package"
+            }
+          ]
+        }
+      ],
+      [
+        "@semantic-release/git",
+        {
+          "assets": ["package.json", "CHANGELOG.md"],
+          "message": "🔖 Release ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+        }
+      ]
+    ]
+  }
 }

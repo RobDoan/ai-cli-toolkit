@@ -4,17 +4,6 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
-    inputs:
-      version_type:
-        description: 'Version increment type'
-        required: true
-        default: 'patch'
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
 
 permissions:
   contents: write
@@ -27,6 +16,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -37,42 +28,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Determine version
-        id: version
-        run: |
-          # Get current version from package.json
-          CURRENT_VERSION=$(node -p "require('./package.json').version")
-          echo "Current version: $CURRENT_VERSION"
-
-          # Determine increment type
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            INCREMENT_TYPE="${{ github.event.inputs.version_type }}"
-          else
-            # Default to patch for pushes to main
-            INCREMENT_TYPE="patch"
-          fi
-
-          echo "Increment type: $INCREMENT_TYPE"
-
-          # Increment version using npm
-          NEW_VERSION=$(npm version $INCREMENT_TYPE --no-git-tag-version)
-          NEW_VERSION=${NEW_VERSION#v}  # Remove 'v' prefix if present
-
-          echo "New version: $NEW_VERSION"
-          echo "version=v${NEW_VERSION}" >> $GITHUB_OUTPUT
-          echo "npm_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
-          echo "increment_type=${INCREMENT_TYPE}" >> $GITHUB_OUTPUT
-
-      - name: Commit version update
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add package.json
-          git commit -m "🔖 Bump version to ${{ steps.version.outputs.npm_version }}"
-          git tag ${{ steps.version.outputs.version }}
-          git push origin main
-          git push origin ${{ steps.version.outputs.version }}
-
       - name: Create commands archive
         run: |
           tar -czf commands.tar.gz commands/
@@ -81,120 +36,8 @@ jobs:
       - name: Build package
         run: npm pack
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Run semantic-release
+        run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          release_name: Release ${{ steps.version.outputs.version }}
-          body: |
-            ## Release ${{ steps.version.outputs.version }}
-
-            **Version Type:** ${{ steps.version.outputs.increment_type }} release
-
-            ### What's Changed
-            This release includes the latest improvements and updates to the command converter.
-
-            ### Features
-            - 🔄 Universal command converter for Claude Code, GitHub Copilot, and Gemini CLI
-            - 📁 Subfolder support with platform-specific handling
-            - 📦 Auto-downloading commands from GitHub releases
-            - ⚡ Interactive conflict resolution
-            - 🎯 Smart caching system
-
-            ### Installation
-            ```bash
-            npm install -g @quydoan/command-converter@${{ steps.version.outputs.npm_version }}
-            ```
-
-            ### Quick Start
-            ```bash
-            # Convert with bundled commands
-            convert-commands
-
-            # Preview changes
-            convert-commands --dry-run
-
-            # Use custom source
-            convert-commands --source ./my-commands
-            ```
-
-            ### Assets
-            - 📦 `commands.tar.gz`: Latest commands library
-            - 🗃️ `*.tgz`: NPM package for installation
-
-            ---
-
-            **Full Changelog**: https://github.com/quydoan/command-converter/commits/${{ steps.version.outputs.version }}
-          draft: false
-          prerelease: false
-
-      - name: Upload commands archive
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./commands.tar.gz
-          asset_name: commands.tar.gz
-          asset_content_type: application/gzip
-
-      - name: Upload NPM package
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./quydoan-command-converter-${{ steps.version.outputs.npm_version }}.tgz
-          asset_name: quydoan-command-converter-${{ steps.version.outputs.npm_version }}.tgz
-          asset_content_type: application/gzip
-
-      - name: Check NPM Authentication
-        run: |
-          if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
-            echo "⚠️  NPM_TOKEN secret not found."
-            echo "📋 To enable npm publishing, add your npm token to GitHub secrets."
-            echo "📖 See SETUP.md for detailed instructions."
-            echo "npm_auth_available=false" >> $GITHUB_ENV
-          else
-            echo "🔐 NPM authentication token found"
-            echo "npm_auth_available=true" >> $GITHUB_ENV
-          fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish to NPM
-        if: env.npm_auth_available == 'true'
-        run: |
-          echo "📦 Publishing to npm..."
-          npm publish
-          echo "✅ Successfully published to npm!"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: NPM Publish Skipped
-        if: env.npm_auth_available == 'false'
-        run: |
-          echo "⏭️  NPM publishing was skipped due to missing authentication."
-          echo "🔗 Add NPM_TOKEN to GitHub secrets to enable automatic publishing."
-
-      - name: Create summary
-        run: |
-          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Increment Type**: ${{ steps.version.outputs.increment_type }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **NPM Package**: @quydoan/command-converter@${{ steps.version.outputs.npm_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **NPM Published**: ${{ env.npm_auth_available == 'true' && '✅ Yes' || '⚠️ Skipped (no auth)' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commands Archive**: commands.tar.gz" >> $GITHUB_STEP_SUMMARY
-          echo "- **Package Size**: $(du -h *.tgz | cut -f1)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commands Size**: $(du -h commands.tar.gz | cut -f1)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ env.npm_auth_available }}" = "false" ]; then
-            echo "### 🔐 NPM Authentication Required" >> $GITHUB_STEP_SUMMARY
-            echo "To enable automatic npm publishing:" >> $GITHUB_STEP_SUMMARY
-            echo "1. Create an npm automation token: \`npm token create --type automation\`" >> $GITHUB_STEP_SUMMARY
-            echo "2. Add it as a GitHub secret named \`NPM_TOKEN\`" >> $GITHUB_STEP_SUMMARY
-            echo "3. See [SETUP.md](./SETUP.md) for detailed instructions" >> $GITHUB_STEP_SUMMARY
-          fi
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
