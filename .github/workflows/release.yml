@@ -151,16 +151,50 @@ jobs:
           asset_name: quydoan-command-converter-${{ steps.version.outputs.npm_version }}.tgz
           asset_content_type: application/gzip
 
-      - name: Publish to NPM
-        run: npm publish
+      - name: Check NPM Authentication
+        run: |
+          if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
+            echo "⚠️  NPM_TOKEN secret not found."
+            echo "📋 To enable npm publishing, add your npm token to GitHub secrets."
+            echo "📖 See SETUP.md for detailed instructions."
+            echo "npm_auth_available=false" >> $GITHUB_ENV
+          else
+            echo "🔐 NPM authentication token found"
+            echo "npm_auth_available=true" >> $GITHUB_ENV
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to NPM
+        if: env.npm_auth_available == 'true'
+        run: |
+          echo "📦 Publishing to npm..."
+          npm publish
+          echo "✅ Successfully published to npm!"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: NPM Publish Skipped
+        if: env.npm_auth_available == 'false'
+        run: |
+          echo "⏭️  NPM publishing was skipped due to missing authentication."
+          echo "🔗 Add NPM_TOKEN to GitHub secrets to enable automatic publishing."
 
       - name: Create summary
         run: |
           echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Increment Type**: ${{ steps.version.outputs.increment_type }}" >> $GITHUB_STEP_SUMMARY
           echo "- **NPM Package**: @quydoan/command-converter@${{ steps.version.outputs.npm_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **NPM Published**: ${{ env.npm_auth_available == 'true' && '✅ Yes' || '⚠️ Skipped (no auth)' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commands Archive**: commands.tar.gz" >> $GITHUB_STEP_SUMMARY
           echo "- **Package Size**: $(du -h *.tgz | cut -f1)" >> $GITHUB_STEP_SUMMARY
           echo "- **Commands Size**: $(du -h commands.tar.gz | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ env.npm_auth_available }}" = "false" ]; then
+            echo "### 🔐 NPM Authentication Required" >> $GITHUB_STEP_SUMMARY
+            echo "To enable automatic npm publishing:" >> $GITHUB_STEP_SUMMARY
+            echo "1. Create an npm automation token: \`npm token create --type automation\`" >> $GITHUB_STEP_SUMMARY
+            echo "2. Add it as a GitHub secret named \`NPM_TOKEN\`" >> $GITHUB_STEP_SUMMARY
+            echo "3. See [SETUP.md](./SETUP.md) for detailed instructions" >> $GITHUB_STEP_SUMMARY
+          fi
