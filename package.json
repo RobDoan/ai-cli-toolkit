@@ -1,7 +1,7 @@
 {
-  "name": "@quydoan/mcp-setup",
+  "name": "@quydoan/command-converter",
   "version": "1.0.0",
-  "description": "Setup script for GitHub and other MCP servers",
+  "description": "Universal command converter for Claude Code, GitHub Copilot, and Gemini CLI slash commands",
   "main": "setup-mcp.js",
   "bin": {
     "mcp-setup": "setup-mcp.js",
@@ -9,7 +9,9 @@
   },
   "scripts": {
     "setup": "node setup-mcp.js",
-    "dry-run": "node setup-mcp.js --dry-run"
+    "dry-run": "node setup-mcp.js --dry-run",
+    "convert": "node convert-commands.js",
+    "convert:dry-run": "node convert-commands.js --dry-run"
   },
   "dependencies": {
     "chalk": "^5.3.0",
@@ -20,22 +22,26 @@
   },
   "type": "module",
   "keywords": [
-    "mcp",
-    "claude",
-    "setup",
-    "github",
+    "claude-code",
+    "github-copilot",
+    "gemini-cli",
+    "slash-commands",
+    "command-converter",
     "ai",
-    "automation"
+    "automation",
+    "yaml",
+    "markdown",
+    "toml"
   ],
-  "author": "",
+  "author": "Quy Doan <quydoan@example.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "git+https://github.com/quydoan/command-converter.git"
   },
-  "homepage": "",
+  "homepage": "https://github.com/quydoan/command-converter#readme",
   "bugs": {
-    "url": ""
+    "url": "https://github.com/quydoan/command-converter/issues"
   },
   "engines": {
     "node": ">=16.0.0"
@@ -46,7 +52,6 @@
   "files": [
     "setup-mcp.js",
     "mcp-servers.config.js",
-    "convert-commands.js",
-    "commands/"
+    "convert-commands.js"
   ]
 }
