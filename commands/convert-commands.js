@@ -1,11 +1,7 @@
-#!/usr/bin/env node
-
 import fs from 'fs';
 import inquirer from 'inquirer';
 import path from 'path';
 import yaml from 'js-yaml';
-import yargs from 'yargs';
-import { hideBin } from 'yargs/helpers';
 import { fileURLToPath } from 'url';
 import https from 'https';
 import { spawn } from 'child_process';
@@ -36,7 +32,7 @@ class CommandConverter {
   async getDefaultCommandsDir() {
     const cacheDir = path.join(process.env.HOME || process.env.USERPROFILE, '.command-converter');
     const commandsDir = path.join(cacheDir, 'commands');
-    const packageCommandsDir = path.join(__dirname, 'commands');
+    const packageCommandsDir = path.join(__dirname, '..', 'commands');
     const localCommandsDir = './commands';
 
     // Priority order: local -> cached -> package -> download
@@ -71,13 +67,11 @@ class CommandConverter {
         fs.mkdirSync(cacheDir, { recursive: true });
       }
 
+      const archivePath = path.join(cacheDir, 'commands.tar.gz');
+      const url = process.env.COMMANDS_DOWNLOAD_URL || 'https://github.com/RobDoan/ai-cli-toolkit/releases/latest/download/commands.tar.gz';
 
-  const archivePath = path.join(cacheDir, 'commands.tar.gz');
-  // Use environment variable if provided, otherwise fallback to default
-  const url = process.env.COMMANDS_DOWNLOAD_URL || 'https://github.com/quydoan/ai-cli-toolkit/releases/latest/download/commands.tar.gz';
-
-  // Download the archive
-  await this.downloadFile(url, archivePath);
+      // Download the archive
+      await this.downloadFile(url, archivePath);
 
       // Extract the archive
       await this.extractArchive(archivePath, cacheDir);
@@ -467,66 +461,61 @@ class CommandConverter {
     console.log(`  GitHub Copilot: ${this.copilotDir}`);
     console.log(`  Gemini CLI: ${this.geminiDir}`);
   }
-}
 
-// CLI configuration
-const argv = yargs(hideBin(process.argv))
-  .usage('Usage: $0 [options]')
-  .option('source', {
-    alias: 's',
-    type: 'string',
-    description: 'Source directory containing YAML command files (defaults to bundled commands)'
-  })
-  .option('claude', {
-    alias: 'c',
-    type: 'string',
-    description: 'Output directory for Claude Code commands',
-    default: './.claude/commands'
-  })
-  .option('copilot', {
-    alias: 'p',
-    type: 'string',
-    description: 'Output directory for GitHub Copilot prompts',
-    default: './.github/prompts'
-  })
-  .option('gemini', {
-    alias: 'g',
-    type: 'string',
-    description: 'Output directory for Gemini CLI commands',
-    default: './.gemini/commands'
-  })
-  .option('dry-run', {
-    alias: 'd',
-    type: 'boolean',
-    description: 'Show what would be done without making changes',
-    default: false
-  })
-  .help()
-  .alias('help', 'h')
-  .example('$0', 'Convert commands using default directories')
-  .example('$0 --source ./my-commands --claude ./output/claude', 'Use custom directories')
-  .example('$0 --dry-run', 'Preview changes without executing')
-  .argv;
-
-// Run the converter
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const converter = new CommandConverter({
-    sourceDir: argv.source,
-    claudeDir: argv.claude,
-    copilotDir: argv.copilot,
-    geminiDir: argv.gemini
-  });
-
-  try {
-    if (argv.dryRun) {
-      await converter.dryRun();
+  async run() {
+    if (this.options.dryRun) {
+      await this.dryRun();
     } else {
-      await converter.convertAll();
+      await this.convertAll();
     }
-  } catch (error) {
-    console.error('❌ Error:', error.message);
-    process.exit(1);
   }
 }
 
-export default CommandConverter;
+export const convertCommandsCommand = {
+  command: 'convert [options]',
+  describe: 'Convert commands between AI CLI platforms',
+  builder: (yargs) => {
+    return yargs
+      .option('source', {
+        type: 'string',
+        description: 'Source directory containing commands to convert'
+      })
+      .option('claude-dir', {
+        type: 'string',
+        description: 'Claude commands output directory',
+        default: './.claude/commands'
+      })
+      .option('copilot-dir', {
+        type: 'string',
+        description: 'GitHub Copilot prompts output directory',
+        default: './.github/prompts'
+      })
+      .option('gemini-dir', {
+        type: 'string',
+        description: 'Gemini commands output directory',
+        default: './.gemini/commands'
+      })
+      .option('dry-run', {
+        type: 'boolean',
+        description: 'Preview changes without applying them',
+        default: false
+      });
+  },
+  handler: async (argv) => {
+    const converter = new CommandConverter({
+      sourceDir: argv.source,
+      claudeDir: argv.claudeDir,
+      copilotDir: argv.copilotDir,
+      geminiDir: argv.geminiDir,
+      dryRun: argv.dryRun
+    });
+    
+    try {
+      await converter.initialize();
+      await converter.run();
+    } catch (error) {
+      console.error('Conversion failed:', error.message);
+      process.exit(1);
+    }
+  }
+};

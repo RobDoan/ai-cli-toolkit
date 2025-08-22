@@ -1,17 +1,18 @@
 {
-  "name": "@quydoan/command-converter",
+  "name": "ai-cli-toolkit",
   "version": "2.0.1",
-  "description": "Universal command converter for Claude Code, GitHub Copilot, and Gemini CLI slash commands",
-  "main": "setup-mcp.js",
+  "description": "Universal toolkit for AI CLI tools - MCP server setup and command conversion",
+  "main": "dist/cli.js",
   "bin": {
-    "mcp-setup": "setup-mcp.js",
-    "convert-commands": "convert-commands.js"
+    "ai-cli-toolkit": "dist/cli.js",
+    "ait": "dist/cli.js"
   },
   "scripts": {
-    "setup": "node setup-mcp.js",
-    "dry-run": "node setup-mcp.js --dry-run",
-    "convert": "node convert-commands.js",
-    "convert:dry-run": "node convert-commands.js --dry-run"
+    "build": "vite build",
+    "prepublishOnly": "npm run build",
+    "setup": "node dist/cli.js setup",
+    "convert": "node dist/cli.js convert",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
     "chalk": "^5.3.0",
@@ -22,26 +23,25 @@
   },
   "type": "module",
   "keywords": [
+    "ai-cli",
+    "mcp",
     "claude-code",
     "github-copilot",
     "gemini-cli",
-    "slash-commands",
     "command-converter",
-    "ai",
+    "ai-toolkit",
     "automation",
-    "yaml",
-    "markdown",
-    "toml"
+    "mcp-server-setup"
   ],
   "author": "Quy Doan <quydoan@example.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/quydoan/command-converter.git"
+    "url": "git+https://github.com/RobDoan/ai-cli-toolkit.git"
   },
-  "homepage": "https://github.com/quydoan/command-converter#readme",
+  "homepage": "https://github.com/RobDoan/ai-cli-toolkit#readme",
   "bugs": {
-    "url": "https://github.com/quydoan/command-converter/issues"
+    "url": "https://github.com/RobDoan/ai-cli-toolkit/issues"
   },
   "engines": {
     "node": ">=16.0.0"
@@ -50,19 +50,20 @@
     "access": "public"
   },
   "files": [
-    "setup-mcp.js",
-    "mcp-servers.config.js",
-    "convert-commands.js"
+    "dist/"
   ],
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^11.0.4",
     "@semantic-release/npm": "^12.0.2",
-    "semantic-release": "^24.2.7"
+    "semantic-release": "^24.2.7",
+    "vite": "^7.1.3"
   },
   "release": {
-    "branches": ["main"],
+    "branches": [
+      "main"
+    ],
     "plugins": [
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
@@ -78,8 +79,8 @@
               "label": "Commands Archive"
             },
             {
-              "path": "quydoan-command-converter-*.tgz",
-              "name": "quydoan-command-converter-${nextRelease.version}.tgz",
+              "path": "ai-cli-toolkit-*.tgz",
+              "name": "ai-cli-toolkit-${nextRelease.version}.tgz",
               "label": "NPM Package"
             }
           ]
@@ -88,7 +89,10 @@
       [
         "@semantic-release/git",
         {
-          "assets": ["package.json", "CHANGELOG.md"],
+          "assets": [
+            "package.json",
+            "CHANGELOG.md"
+          ],
           "message": "🔖 Release ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
         }
       ]

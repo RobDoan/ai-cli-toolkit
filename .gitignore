@@ -42,3 +42,4 @@ lib-cov/
 *.tsbuildinfo
 /.git/
 node_modules/
+.claude/settings.local.json
