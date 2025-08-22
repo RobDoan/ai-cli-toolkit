@@ -1,6 +1,6 @@
 {
   "name": "@quydoan/command-converter",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Universal command converter for Claude Code, GitHub Copilot, and Gemini CLI slash commands",
   "main": "setup-mcp.js",
   "bin": {
