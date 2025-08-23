@@ -1,5 +1,5 @@
 {
-  "name": "ai-cli-toolkit",
+  "name": "@quydoan/ai-cli-toolkit",
   "version": "1.0.0",
   "description": "Universal toolkit for AI CLI tools - MCP server setup and command conversion",
   "main": "dist/cli.js",
