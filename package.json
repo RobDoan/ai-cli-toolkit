@@ -1,6 +1,6 @@
 {
   "name": "ai-cli-toolkit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Universal toolkit for AI CLI tools - MCP server setup and command conversion",
   "main": "dist/cli.js",
   "bin": {
