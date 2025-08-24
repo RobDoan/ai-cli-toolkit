@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/RobDoan/ai-cli-toolkit/compare/v1.3.0...v1.3.1) (2025-08-24)
+
+
+### Bug Fixes
+
+* Correct file paths in quick-prd.yaml for technology stack summary and PRD document ([c89efed](https://github.com/RobDoan/ai-cli-toolkit/commit/c89efed96063c3d250563609d21452ecb78da2e6))
+
 # [1.3.0](https://github.com/RobDoan/ai-cli-toolkit/compare/v1.2.0...v1.3.0) (2025-08-24)
 
 
