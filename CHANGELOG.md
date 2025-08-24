@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/RobDoan/ai-cli-toolkit/compare/v1.2.0...v1.3.0) (2025-08-24)
+
+
+### Features
+
+* Update README and MCP server config to include Gemini CLI and enhance Notion server setup ([ec85f5f](https://github.com/RobDoan/ai-cli-toolkit/commit/ec85f5f8a723b1a2c7ef9ecba029e38a031678ef))
+
 # [1.2.0](https://github.com/RobDoan/ai-cli-toolkit/compare/v1.1.0...v1.2.0) (2025-08-24)
 
 
