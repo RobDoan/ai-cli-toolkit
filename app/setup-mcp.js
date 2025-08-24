@@ -188,7 +188,14 @@ class MCPSetup {
       for (const serverName of this.selectedServers) {
         const server = getServerConfig(serverName);
         if (server.config.vscode) {
-          const serverConfig = substituteTokens(server.config.vscode, this.tokens);
+          // First substitute tokens, then convert to VS Code input format
+          let serverConfig = substituteTokens(server.config.vscode, this.tokens);
+
+          // Convert {{token}} placeholders to ${input:token} format for VS Code
+          const configStr = JSON.stringify(serverConfig);
+          const convertedStr = configStr.replace(/\{\{([^}]+)\}\}/g, '${input:$1}');
+          serverConfig = JSON.parse(convertedStr);
+
           config.mcpServers[serverName] = serverConfig;
           this.log.success(`${server.name} added to VS Code config`);
         }
@@ -219,7 +226,7 @@ class MCPSetup {
       // Determine config path - check current directory first, then user home
       let configPath = path.join(process.cwd(), '.gemini', 'settings.json');
       const homeConfigPath = path.join(os.homedir(), '.gemini', 'settings.json');
-      
+
       // Check if local .gemini exists, otherwise use home directory
       const useLocalConfig = await fs.pathExists(path.join(process.cwd(), '.gemini'));
       if (!useLocalConfig) {
