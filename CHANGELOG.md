@@ -1,3 +1,11 @@
+# [1.2.0](https://github.com/RobDoan/ai-cli-toolkit/compare/v1.1.0...v1.2.0) (2025-08-24)
+
+
+### Features
+
+* Add Gemini CLI setup functionality to MCP Server Setup Tool ([c87797b](https://github.com/RobDoan/ai-cli-toolkit/commit/c87797b4803f3e6a79d0b377c0c1011c32ece388))
+* Enhance MCP server configuration with dynamic server addition and client-specific generators ([f88d281](https://github.com/RobDoan/ai-cli-toolkit/commit/f88d28112c45bf913161b6751d69dc08f605c140))
+
 # [1.1.0](https://github.com/RobDoan/ai-cli-toolkit/compare/v1.0.0...v1.1.0) (2025-08-24)
 
 
