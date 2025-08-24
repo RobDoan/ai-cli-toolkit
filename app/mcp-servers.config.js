@@ -39,6 +39,20 @@ export const mcpServers = {
       vscode: {
         url: 'https://api.githubcopilot.com/mcp/',
         authorization_token: 'Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}'
+      },
+      gemini: {
+        command: 'docker',
+        args: [
+          'run',
+          '-i',
+          '--rm',
+          '-e',
+          'GITHUB_PERSONAL_ACCESS_TOKEN',
+          'ghcr.io/github/github-mcp-server'
+        ],
+        env: {
+          GITHUB_PERSONAL_ACCESS_TOKEN: '${GITHUB_PERSONAL_ACCESS_TOKEN}'
+        }
       }
     }
   },
@@ -51,25 +65,19 @@ export const mcpServers = {
     requiredTokens: ['NOTION_TOKEN'],
     config: {
       claudeCode: {
-        "command": "npx",
-        "args": ["-y", "@notionhq/notion-mcp-server"],
-        "env": {
-          "NOTION_TOKEN": '${NOTION_TOKEN}'
-        }
+        type: 'sse',
+        url: 'https://mcp.linear.app/sse',
       },
       claudeDesktop: {
-        "command": "npx",
-        "args": ["-y", "@notionhq/notion-mcp-server"],
-        "env": {
-          "NOTION_TOKEN": '${NOTION_TOKEN}'
-        }
+        type: 'sse',
+        url: 'https://mcp.linear.app/sse',
       },
       vscode: {
-        "command": "npx",
-        "args": ["-y", "@notionhq/notion-mcp-server"],
-        "env": {
-          "NOTION_TOKEN": '${NOTION_TOKEN}'
-        }
+        type: 'sse',
+        url: 'https://mcp.linear.app/sse',
+      },
+      gemini: {
+        url: 'https://mcp.linear.app/sse'
       }
     }
   },
@@ -92,6 +100,9 @@ export const mcpServers = {
       vscode: {
         type: 'sse',
         url: 'https://mcp.linear.app/sse',
+      },
+      gemini: {
+        url: 'https://mcp.linear.app/sse'
       }
     }
   },
@@ -113,6 +124,9 @@ export const mcpServers = {
       vscode: {
         type: 'sse',
         url: 'http://127.0.0.1:3845/sse',
+      },
+      gemini: {
+        url: 'http://127.0.0.1:3845/sse'
       }
     }
   },
@@ -150,6 +164,14 @@ export const mcpServers = {
           'mcp/filesystem',
           '/projects'
         ]
+      },
+      gemini: {
+        command: 'npx',
+        args: [
+          '-y',
+          '@modelcontextprotocol/server-filesystem',
+          '${WORKSPACE_FOLDER}'
+        ]
       }
     }
   },
@@ -161,16 +183,31 @@ export const mcpServers = {
     requiredTokens: [],
     config: {
       claudeCode: {
-        command: 'npx',
-        args: ['-y', '@upstash/context7-mcp']
+        "type": "http",
+        "url": "https://mcp.context7.com/mcp",
+        "headers": {
+          "CONTEXT7_API_KEY": "CONTEXT7_API_KEY"
+        }
       },
       claudeDesktop: {
-        command: 'npx',
-        args: ['-y', '@upstash/context7-mcp']
+        "type": "http",
+        "url": "https://mcp.context7.com/mcp",
+        "headers": {
+          "CONTEXT7_API_KEY": "CONTEXT7_API_KEY"
+        }
       },
       vscode: {
-        command: 'npx',
-        args: ['-y', '@upstash/context7-mcp']
+        "type": "http",
+        "url": "https://mcp.context7.com/mcp",
+        "headers": {
+          "CONTEXT7_API_KEY": "CONTEXT7_API_KEY"
+        }
+      },
+      gemini: {
+        "httpUrl": "https://mcp.context7.com/mcp",
+        "headers": {
+          "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
+        }
       }
     }
   }

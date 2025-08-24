@@ -212,6 +212,80 @@ class MCPSetup {
     }
   }
 
+  async setupGeminiCLI() {
+    this.log.info('Setting up Gemini CLI...');
+
+    try {
+      // Determine config path - check current directory first, then user home
+      let configPath = path.join(process.cwd(), '.gemini', 'settings.json');
+      const homeConfigPath = path.join(os.homedir(), '.gemini', 'settings.json');
+      
+      // Check if local .gemini exists, otherwise use home directory
+      const useLocalConfig = await fs.pathExists(path.join(process.cwd(), '.gemini'));
+      if (!useLocalConfig) {
+        configPath = homeConfigPath;
+      }
+
+      // Ensure directory exists
+      await fs.ensureDir(path.dirname(configPath));
+
+      // Read existing config or create new one
+      let config = {};
+      if (await fs.pathExists(configPath)) {
+        config = await fs.readJson(configPath);
+      }
+
+      // Initialize mcpServers if not exists
+      if (!config.mcpServers) {
+        config.mcpServers = {};
+      }
+
+      // Add selected servers to config
+      for (const serverName of this.selectedServers) {
+        const server = getServerConfig(serverName);
+        if (!server.config.gemini) {
+          this.log.warning(`${server.name} does not have Gemini CLI configuration`);
+          continue;
+        }
+
+        let serverConfig;
+
+        // Handle workspace folder substitution for filesystem server
+        if (serverName === 'filesystem') {
+          const { workspaceFolder } = await inquirer.prompt([{
+            type: 'input',
+            name: 'workspaceFolder',
+            message: 'Enter the workspace folder path for filesystem access:',
+            default: process.cwd(),
+            validate: input => fs.pathExistsSync(input) || 'Path does not exist'
+          }]);
+
+          const tokensWithWorkspace = { ...this.tokens, WORKSPACE_FOLDER: workspaceFolder };
+          serverConfig = substituteTokens(server.config.gemini, tokensWithWorkspace);
+        } else {
+          serverConfig = substituteTokens(server.config.gemini, this.tokens);
+        }
+
+        config.mcpServers[serverName] = serverConfig;
+        this.log.success(`${server.name} added to Gemini CLI config`);
+      }
+
+      // Write config file
+      if (this.dryRun) {
+        this.log.info(`[DRY RUN] Would write config to: ${configPath}`);
+        this.log.info(`[DRY RUN] Config content:`);
+        console.log(JSON.stringify(config, null, 2));
+      } else {
+        await fs.writeJson(configPath, config, { spaces: 2 });
+      }
+      this.log.success(`Gemini CLI config ${this.dryRun ? 'would be' : ''} saved to: ${configPath}`);
+      return true;
+    } catch (error) {
+      this.log.error(`Failed to setup Gemini CLI: ${error.message}`);
+      return false;
+    }
+  }
+
   async run() {
     console.log(chalk.cyan.bold('🚀 MCP Server Setup Tool\n'));
 
@@ -239,7 +313,8 @@ class MCPSetup {
       choices: [
         { name: 'Claude Code', value: 'claudeCode' },
         { name: 'Claude Desktop', value: 'claudeDesktop' },
-        { name: 'VS Code GitHub Copilot', value: 'vscode' }
+        { name: 'VS Code GitHub Copilot', value: 'vscode' },
+        { name: 'Gemini CLI', value: 'gemini' }
       ],
       validate: input => input.length > 0 || 'Please select at least one client'
     }]);
@@ -277,6 +352,10 @@ class MCPSetup {
 
     if (this.selectedClients.includes('vscode')) {
       results.vscode = await this.setupVSCode();
+    }
+
+    if (this.selectedClients.includes('gemini')) {
+      results.gemini = await this.setupGeminiCLI();
     }
 
     // Summary
