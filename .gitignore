@@ -43,3 +43,4 @@ lib-cov/
 /.git/
 node_modules/
 .claude/settings.local.json
+.mcp.json
