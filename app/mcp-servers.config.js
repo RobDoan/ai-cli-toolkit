@@ -98,7 +98,7 @@ export const mcpServers = {
     description: 'Notion API MCP server connection',
     type: 'mcp',
     command: 'npx',
-    requiredTokens: ['NOTION_TOKEN'],
+    requiredTokens: [],
     config: buildConfig({
       url: 'https://mcp.notion.app/sse' // Note: This should be the actual Notion MCP URL
     })

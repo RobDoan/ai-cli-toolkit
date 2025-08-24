@@ -4,7 +4,8 @@ Universal toolkit for AI CLI tools, featuring MCP server setup and command conve
 
 ## Features
 
-- **MCP Server Setup**: Interactively configure MCP servers for Claude Code, Claude Desktop, and VS Code.
+- **MCP Server Setup**: Interactively configure MCP servers for Claude Code, Claude Desktop, VS Code, and Gemini CLI.
+- **Dynamic Server Configuration**: Add and configure MCP servers dynamically with client-specific optimizations.
 - **Universal Command Format**: Write commands once in YAML, convert them for all supported platforms.
 - **Platform-Specific Optimization**: Each platform receives an optimized format and structure.
 - **Bundled Commands**: Comes with a set of pre-built commands for immediate use.
@@ -17,6 +18,7 @@ Universal toolkit for AI CLI tools, featuring MCP server setup and command conve
 - Claude Code
 - Claude Desktop
 - VS Code (GitHub Copilot)
+- Gemini CLI
 
 ### Command Conversion
 | Platform | Format | Structure |
@@ -28,7 +30,7 @@ Universal toolkit for AI CLI tools, featuring MCP server setup and command conve
 ## Installation
 
 ```bash
-npm install -g ai-cli-toolkit
+npm install -g @quydoan/ai-cli-toolkit
 ```
 
 ## Usage
@@ -158,6 +160,23 @@ Create a git commit with the following message: {{args}}
 The toolkit includes pre-built commands for various development tasks, such as code review, project specification, and implementation guidance.
 
 Run `ait convert --dry-run` to see a list of all available bundled commands.
+
+## MCP Server Configuration
+
+The toolkit includes pre-configured MCP servers for popular services:
+
+- **GitHub**: Repository management and operations
+- **Linear**: Issue tracking and project management
+- **Notion**: Notion API integration
+- **Context7**: Enhanced context management
+- **Figma**: Design file management
+- **Filesystem**: Local file and directory operations
+- **PostgreSQL**: Database operations
+- **SQLite**: SQLite database management
+- **Puppeteer**: Browser automation and web scraping
+- **Slack**: Workspace integration
+
+Each server is automatically configured with the appropriate transport method (Docker, SSE, HTTP, or npm command) based on the target client.
 
 ## License
 
