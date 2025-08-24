@@ -9,7 +9,7 @@ import {
   getServerConfig,
   validateServerTokens,
   substituteTokens
-} from '../mcp-servers.config.js';
+} from './mcp-servers.config.js';
 
 class MCPSetup {
   constructor(options = {}) {
@@ -317,7 +317,7 @@ export const setupMcpCommand = {
       dryRun: argv.dryRun,
       config: argv.config
     });
-    
+
     try {
       await setup.run();
     } catch (error) {

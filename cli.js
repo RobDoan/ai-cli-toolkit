@@ -5,8 +5,8 @@ import { hideBin } from 'yargs/helpers';
 import chalk from 'chalk';
 
 // Import command modules
-import { setupMcpCommand } from './commands/setup-mcp.js';
-import { convertCommandsCommand } from './commands/convert-commands.js';
+import { setupMcpCommand } from './app/setup-mcp.js';
+import { convertCommandsCommand } from './app/convert-commands.js';
 
 const cli = yargs(hideBin(process.argv))
   .scriptName('ai-cli-toolkit')

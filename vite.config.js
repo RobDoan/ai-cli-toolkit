@@ -36,12 +36,8 @@ export default defineConfig({
     {
       name: 'copy-files-and-set-permissions',
       writeBundle() {
-        // Copy mcp-servers.config.js
-        fs.copyFileSync('mcp-servers.config.js', 'dist/mcp-servers.config.js');
-        
         // Make CLI executable
         fs.chmodSync('dist/cli.js', '755');
-        
         console.log('✅ Additional files copied and permissions set');
       }
     }

@@ -30,8 +30,6 @@ jobs:
 
       - name: Build project
         run: npm run build
-        env:
-          COMMANDS_DOWNLOAD_URL: https://github.com/${{ github.repository }}/releases/latest/download/commands.tar.gz
 
       - name: Create commands archive
         run: |
